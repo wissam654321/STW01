@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NITFORT - Web Gaming Hub</title>
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/material-darker.min.css">
+
+  <style>
+    :root {
+      --bg-color: #0b0c17;
+      --sidebar-bg: #101223;
+      --card-bg: #16182e;
+      --card-border: rgba(255, 255, 255, 0.08);
+      --accent-purple: #8b5cf6;
+      --accent-cyan: #06b6d4;
+      --accent-pink: #ec4899;
+      --accent-green: #10b981;
+      --accent-orange: #f59e0b;
+      --accent-primary: var(--accent-purple);
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --galaxy-gradient: radial-gradient(circle at 20% 30%, rgba(139, 92, 246, 0.25) 0%, transparent 60%),
+                         radial-gradient(circle at 80% 70%, rgba(6, 182, 212, 0.2) 0%, transparent 60%);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; user-select: none; }
+    
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: rgba(16, 18, 35, 0.6); }
+    ::-webkit-scrollbar-thumb { background: rgba(139, 92, 246, 0.4); border-radius: 4px; border: 2px solid rgba(16, 18, 35, 0.6); }
+    ::-webkit-scrollbar-thumb:hover { background: var(--accent-primary); }
+
+    body { background-color: var(--bg-color); color: var(--text-main); min-height: 100vh; display: flex; overflow-x: hidden; }
+
+    #galaxy-canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; }
+    .nebula-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--galaxy-gradient); z-index: 1; pointer-events: none; }
+
+    aside { width: 260px; background: var(--sidebar-bg); border-right: 1px solid var(--card-border); display: flex; flex-direction: column; z-index: 10; position: relative; }
+    .brand { padding: 25px 20px; display: flex; align-items: center; gap: 14px; cursor: pointer; }
+    
+    .brand-icon-shield {
+      width: 52px;
+      height: 48px;
+      background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));
+      clip-path: polygon(50% 0%, 100% 20%, 100% 75%, 50% 100%, 0% 75%, 0% 20%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 0.95rem;
+      color: #ffffff;
+      box-shadow: 0 0 20px rgba(139, 92, 246, 0.6);
+      letter-spacing: -0.5px;
+    }
+    
+    .brand-title { font-size: 1.3rem; font-weight: 900; letter-spacing: 1px; }
+    .brand-subtitle { font-size: 0.65rem; color: var(--text-muted); letter-spacing: 1px; }
+
+    .sidebar-menu { display: flex; flex-direction: column; gap: 5px; padding: 0 12px; }
+    .menu-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 12px; color: var(--text-muted); cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: all 0.2s; }
+    .menu-item:hover, .menu-item.active { color: white; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--card-border); }
+    .menu-badge { margin-left: auto; background: var(--accent-primary); color: white; font-size: 0.65rem; font-weight: 800; padding: 2px 6px; border-radius: 4px; }
+
+    .sidebar-legal { padding: 15px 20px; border-top: 1px solid var(--card-border); font-size: 0.7rem; color: var(--text-muted); line-height: 1.4; }
+    .sidebar-legal a { color: var(--accent-cyan); text-decoration: none; font-weight: 600; cursor: pointer; }
+    .sidebar-legal a:hover { text-decoration: underline; }
+
+    .sidebar-user { margin-top: auto; padding: 15px; border-top: 1px solid var(--card-border); display: flex; align-items: center; gap: 12px; background: rgba(0,0,0,0.2); }
+    .user-avatar-img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent-primary); cursor: pointer; }
+
+    .main-wrapper { flex: 1; display: flex; flex-direction: column; z-index: 5; position: relative; height: 100vh; overflow-y: auto; }
+    topbar { padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--card-border); background: rgba(11, 12, 23, 0.6); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 20; }
+    .search-box { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--card-border); border-radius: 10px; padding: 8px 15px; display: flex; align-items: center; gap: 10px; width: 350px; }
+    .search-box input { background: transparent; border: none; outline: none; color: white; width: 100%; font-size: 0.85rem; }
+
+    .btn-action { background: rgba(255, 255, 255, 0.08); border: 1px solid var(--card-border); color: white; padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s; }
+    .btn-action:hover { background: rgba(255, 255, 255, 0.15); }
+    .btn-action.primary { background: var(--accent-primary); border: none; }
+
+    .content-area { padding: 30px; }
+    .page { display: none; }
+    .page.active { display: block; }
+
+    .hero-banner { background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(6, 182, 212, 0.1)), var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px; padding: 40px; margin-bottom: 30px; }
+    .hero-tag { background: rgba(255, 255, 255, 0.1); padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
+    .hero-title { font-size: 2.2rem; font-weight: 900; margin: 15px 0 10px; }
+    .hero-desc { color: var(--text-muted); max-width: 550px; font-size: 0.95rem; margin-bottom: 25px; line-height: 1.5; }
+
+    .store-filters { display: flex; gap: 10px; margin-bottom: 25px; }
+    .filter-btn { background: var(--card-bg); border: 1px solid var(--card-border); color: var(--text-muted); padding: 8px 16px; border-radius: 10px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; }
+    .filter-btn.active, .filter-btn:hover { background: var(--accent-primary); color: white; border-color: transparent; }
+
+    .games-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; margin-bottom: 40px; }
+    .game-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; transition: transform 0.2s, border-color 0.2s; position: relative; }
+    .game-card:hover { transform: translateY(-5px); border-color: var(--accent-primary); }
+    .game-cover { width: 100%; height: 160px; object-fit: cover; background: #1e1b4b; }
+    .game-details { padding: 15px; display: flex; flex-direction: column; flex: 1; }
+    .game-name { font-weight: 700; font-size: 1.1rem; margin-bottom: 5px; }
+    .game-author-txt { font-size: 0.8rem; color: var(--accent-cyan); margin-bottom: 15px; cursor: pointer; display: inline-block; }
+    .game-author-txt:hover { text-decoration: underline; }
+    .game-card-footer { margin-top: auto; display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+    .game-stats { font-size: 0.75rem; color: var(--text-muted); display: flex; gap: 10px; }
+
+    .custom-file-btn { display: flex; align-items: center; justify-content: center; gap: 10px; background: rgba(255, 255, 255, 0.05); border: 2px dashed var(--card-border); border-radius: 12px; padding: 18px; color: var(--text-muted); cursor: pointer; transition: all 0.2s; font-weight: 600; font-size: 0.9rem; }
+    .custom-file-btn:hover { border-color: var(--accent-primary); color: white; background: rgba(255, 255, 255, 0.08); }
+
+    .studio-vertical-layout { display: flex; flex-direction: column; gap: 20px; height: 90vh; }
+    .studio-preview-box { flex: 1; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+    .studio-code-box { flex: 2; background: #13141f; border: 1px solid var(--card-border); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+
+    .editor-top { padding: 10px 20px; background: #0e0f1a; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--card-border); }
+    .lang-tabs { display: flex; gap: 8px; }
+    .lang-tab { background: rgba(255, 255, 255, 0.05); border: none; color: #858585; padding: 6px 14px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; font-weight: 600; }
+    .lang-tab.active { background: var(--accent-primary); color: #ffffff; }
+
+    .CodeMirror { height: 100% !important; font-family: 'Fira Code', monospace !important; font-size: 0.9rem !important; background: #10111d !important; line-height: 1.6 !important; }
+    .CodeMirror-gutters { background: #0b0c16 !important; border-right: 1px solid var(--card-border) !important; }
+
+    .game-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(5, 6, 15, 0.98); z-index: 1000; display: none; flex-direction: column; }
+    .game-modal.active { display: flex; }
+    .modal-nav { padding: 12px 25px; background: var(--sidebar-bg); border-bottom: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; }
+    .modal-body { flex: 1; position: relative; background: #000; }
+    iframe#game-frame, iframe#studio-preview { width: 100%; height: 100%; border: none; }
+
+    .modal-popup { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 2000; }
+    .modal-popup.active { display: flex; }
+    .popup-box { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px; padding: 30px; width: 440px; max-height: 90vh; overflow-y: auto; }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; margin-bottom: 8px; font-size: 0.85rem; font-weight: 600; }
+    .form-input { width: 100%; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--card-border); padding: 10px 14px; border-radius: 8px; color: white; outline: none; }
+
+    .theme-grid { display: flex; gap: 15px; margin-top: 20px; }
+    .theme-circle { width: 45px; height: 45px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.2s; }
+    .theme-circle:hover { transform: scale(1.15); border-color: white; }
+
+    .warning-box { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; padding: 12px; border-radius: 10px; font-size: 0.8rem; margin-bottom: 15px; line-height: 1.4; }
+    .error-msg { background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #f87171; padding: 10px 14px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 15px; display: none; }
+    .cgu-checkbox-container { display: flex; align-items: flex-start; gap: 10px; margin: 15px 0; font-size: 0.85rem; color: var(--text-muted); cursor: pointer; }
+    .cgu-checkbox-container input { accent-color: var(--accent-primary); margin-top: 3px; cursor: pointer; }
+    .settings-select { width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--card-border); color: white; padding: 10px; border-radius: 8px; outline: none; margin-top: 5px; }
+  </style>
+</head>
+<body>
+
+  <canvas id="galaxy-canvas"></canvas>
+  <div class="nebula-overlay" id="nebula-bg"></div>
+
+  <aside>
+    <div class="brand" onclick="window.showPage('store')">
+      <div class="brand-icon-shield">NFT</div>
+      <div>
+        <div class="brand-title">NITFORT</div>
+        <div class="brand-subtitle">WEB GAMING HUB</div>
+      </div>
+    </div>
+
+    <div class="sidebar-menu">
+      <div class="menu-item active" onclick="window.showPage('store', this)">
+        <i class="fa-solid fa-store"></i> <span data-i18n="store">Boutique & Jeux</span>
+      </div>
+      <div class="menu-item" onclick="window.showPage('my-games', this)">
+        <i class="fa-solid fa-gamepad"></i> <span data-i18n="library">Ma Bibliothèque</span>
+      </div>
+      <div class="menu-item" onclick="window.showPage('upload', this)">
+        <i class="fa-solid fa-cloud-arrow-up"></i> <span data-i18n="upload">Importer un Jeu</span>
+      </div>
+      <div class="menu-item" onclick="window.showPage('code-studio', this)">
+        <i class="fa-solid fa-code"></i> NITFORT Code <span class="menu-badge">STUDIO</span>
+      </div>
+      <div class="menu-item" onclick="window.showPage('profile', this)">
+        <i class="fa-solid fa-user"></i> <span data-i18n="profile">Mon Profil</span>
+      </div>
+      <div class="menu-item" onclick="window.showPage('settings', this)">
+        <i class="fa-solid fa-sliders"></i> <span data-i18n="settings">Paramètres App</span>
+      </div>
+    </div>
+
+    <div class="sidebar-legal">
+      <div>© 2026 <strong>NITFORT</strong>. Tous droits réservés.</div>
+      <div style="margin-top: 4px;">
+        <a onclick="window.showCguModal()" data-i18n="cgu">Conditions d'Utilisation</a>
+      </div>
+    </div>
+
+    <div class="sidebar-user" id="sidebar-user-info"></div>
+  </aside>
+
+  <div class="main-wrapper">
+    <topbar>
+      <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass" style="color:var(--text-muted);"></i>
+        <input type="text" id="search-input" placeholder="Rechercher un jeu..." oninput="window.filterGames()">
+      </div>
+      <div id="top-user-btn"></div>
+    </topbar>
+
+    <div class="content-area">
+
+      <section id="page-store" class="page active">
+        <div class="hero-banner">
+          <span class="hero-tag">PLATEFORME MODÉRÉE & SÉCURISÉE</span>
+          <h1 class="hero-title" data-i18n="hero_title">Créez, importez et jouez à des jeux web instantanés.</h1>
+          <p class="hero-desc" data-i18n="hero_desc">Le launcher ultime pour publier vos créations. Respectez les conditions d'utilisation : tout contenu obscène ou offensant sera immédiatement banni.</p>
+          <div style="display:flex; gap:12px;">
+            <button class="btn-action primary" onclick="window.showPage('upload')"><i class="fa-solid fa-upload"></i> <span data-i18n="publish_btn">Publier mon Jeu</span></button>
+            <button class="btn-action" onclick="window.showPage('code-studio')"><i class="fa-solid fa-code"></i> <span data-i18n="studio_btn">Ouvrir NITFORT Code</span></button>
+          </div>
+        </div>
+
+        <div class="store-filters">
+          <button class="filter-btn active" onclick="window.setStoreCategory('all', this)"><i class="fa-solid fa-fire"></i> <span data-i18n="cat_all">Tous les jeux</span></button>
+          <button class="filter-btn" onclick="window.setStoreCategory('popular', this)"><i class="fa-solid fa-bolt"></i> <span data-i18n="cat_pop">Populaires & Vues</span></button>
+          <button class="filter-btn" onclick="window.setStoreCategory('loved', this)"><i class="fa-solid fa-heart" style="color:var(--accent-pink);"></i> <span data-i18n="cat_loved">Les plus aimés</span></button>
+          <button class="filter-btn" onclick="window.setStoreCategory('recent', this)"><i class="fa-solid fa-clock"></i> <span data-i18n="cat_new">Nouveautés</span></button>
+        </div>
+
+        <div class="games-grid" id="games-container"></div>
+      </section>
+
+      <section id="page-my-games" class="page">
+        <h2 style="margin-bottom:20px;" data-i18n="library">Mes Jeux Publiés</h2>
+        <div class="games-grid" id="my-games-container"></div>
+      </section>
+
+      <section id="page-dev-profile" class="page">
+        <div id="dev-profile-container" style="max-width:800px; margin:0 auto;"></div>
+      </section>
+
+      <section id="page-upload" class="page">
+        <div class="popup-box" style="width:100%; max-width:600px; margin:0 auto;">
+          <h2 style="margin-bottom:15px;"><i class="fa-solid fa-upload"></i> <span data-i18n="upload_title">Publier un jeu HTML</span></h2>
+          
+          <div class="warning-box">
+            <i class="fa-solid fa-triangle-exclamation"></i> <strong data-i18n="rules_title">Règles de publication :</strong> <span data-i18n="rules_desc">Tout projet contenant des obscénités, contenus haineux, violents ou violant le droit d'auteur sera supprimé et le compte associé sera définitivement banni.</span>
+          </div>
+
+          <form onsubmit="window.handlePublishGame(event)">
+            <div class="form-group">
+              <label data-i18n="game_title">Titre du jeu</label>
+              <input type="text" id="upload-title" class="form-input" placeholder="Nom de votre jeu" required>
+            </div>
+            <div class="form-group">
+              <label data-i18n="game_desc">Description</label>
+              <input type="text" id="upload-desc" class="form-input" placeholder="Courte description" required>
+            </div>
+            
+            <div class="form-group">
+              <label data-i18n="cover_img">Image de couverture (Facultatif)</label>
+              <div class="custom-file-btn" onclick="document.getElementById('upload-cover').click()">
+                <i class="fa-solid fa-image"></i> <span id="cover-label" data-i18n="choose_cover">Choisir une image de couverture</span>
+              </div>
+              <input type="file" id="upload-cover" accept="image/*" style="display:none;" onchange="window.updateFileLabel(this, 'cover-label')">
+            </div>
+
+            <div class="form-group">
+              <label data-i18n="game_file">Fichier du jeu (.html)</label>
+              <div class="custom-file-btn" onclick="document.getElementById('upload-html').click()">
+                <i class="fa-solid fa-file-code"></i> <span id="html-label" data-i18n="choose_file">Sélectionner le fichier .html</span>
+              </div>
+              <input type="file" id="upload-html" accept=".html" style="display:none;" required onchange="window.updateFileLabel(this, 'html-label')">
+            </div>
+
+            <label class="cgu-checkbox-container">
+              <input type="checkbox" id="upload-cgu-check" required>
+              <span data-i18n="cgu_agree">J'accepte les Conditions d'Utilisation de NITFORT et certifie que ce jeu ne contient aucun contenu obscène, haineux ou illégal.</span>
+            </label>
+
+            <button type="submit" class="btn-action primary" style="width:100%; justify-content:center; padding:14px; margin-top:10px;" data-i18n="publish_submit">Publier le jeu</button>
+          </form>
+        </div>
+      </section>
+
+      <section id="page-code-studio" class="page">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+          <h2>NITFORT Code Studio</h2>
+          <div style="display:flex; gap:10px;">
+            <button class="btn-action" onclick="document.getElementById('import-studio-file').click()"><i class="fa-solid fa-folder-open"></i> <span data-i18n="import_btn">Importer</span></button>
+            <input type="file" id="import-studio-file" accept=".html,.js,.cs,.cpp" style="display:none;" onchange="window.importStudioCode(this)">
+            <button class="btn-action" onclick="window.downloadStudioCode()"><i class="fa-solid fa-download"></i> <span data-i18n="download_btn">Télécharger</span></button>
+            <button class="btn-action primary" onclick="window.publishFromStudio()"><i class="fa-solid fa-paper-plane"></i> <span data-i18n="publish_studio_btn">Publier</span></button>
+          </div>
+        </div>
+
+        <div class="studio-vertical-layout">
+          <div class="studio-preview-box" id="studio-preview-wrapper">
+            <div class="editor-top">
+              <span data-i18n="preview_title"><i class="fa-solid fa-desktop"></i> Aperçu du Jeu (Grand Écran)</span>
+              <button class="btn-action" style="padding:4px 10px; font-size:0.75rem;" onclick="window.toggleStudioFullscreen()"><i class="fa-solid fa-expand"></i> <span data-i18n="fullscreen_btn">Plein Écran</span></button>
+            </div>
+            <iframe id="studio-preview"></iframe>
+          </div>
+
+          <div class="studio-code-box">
+            <div class="editor-top">
+              <div class="lang-tabs">
+                <button class="lang-tab active" onclick="window.switchLanguage('html', this)">HTML / JS</button>
+                <button class="lang-tab" onclick="window.switchLanguage('clike', this)">C# / C++</button>
+              </div>
+              <span style="font-size:0.75rem; color:#858585;"><i class="fa-solid fa-code"></i> CodeMirror Studio Pro</span>
+            </div>
+            <textarea id="code-editor-target"></textarea>
+          </div>
+        </div>
+      </section>
+
+      <section id="page-profile" class="page">
+        <div class="popup-box" style="margin:0 auto; text-align:center;" id="profile-box"></div>
+      </section>
+
+      <section id="page-settings" class="page">
+        <div class="popup-box" style="margin:0 auto;">
+          <h2 data-i18n="settings_title">Paramètres de l'application</h2>
+          <p style="color:var(--text-muted); font-size:0.85rem; margin-top:5px;" data-i18n="settings_desc">Personnalisez votre expérience sur NITFORT :</p>
+          
+          <div class="form-group" style="margin-top:20px;">
+            <label style="font-weight:700;"><i class="fa-solid fa-globe"></i> <span data-i18n="lang_label">Langue du site / Website Language</span></label>
+            <select id="app-lang-select" class="settings-select" onchange="window.changeAppLanguage(this.value)">
+              <option value="fr">Français</option>
+              <option value="en">English (Anglais)</option>
+              <option value="es">Español (Espagnol)</option>
+              <option value="ru">Русский (Russe)</option>
+              <option value="zh">中文 (Chinois)</option>
+            </select>
+          </div>
+
+          <div style="margin-top:25px;">
+            <label style="font-weight:700; display:block; margin-bottom:8px;"><i class="fa-solid fa-palette"></i> <span data-i18n="theme_label">Couleur d'ambiance de la galaxie</span></label>
+            <div class="theme-grid">
+              <div class="theme-circle" style="background:#8b5cf6;" onclick="window.changeTheme('purple')"></div>
+              <div class="theme-circle" style="background:#06b6d4;" onclick="window.changeTheme('cyan')"></div>
+              <div class="theme-circle" style="background:#ec4899;" onclick="window.changeTheme('pink')"></div>
+              <div class="theme-circle" style="background:#10b981;" onclick="window.changeTheme('green')"></div>
+              <div class="theme-circle" style="background:#f59e0b;" onclick="window.changeTheme('orange')"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <div id="game-modal" class="game-modal">
+    <div class="modal-nav">
+      <div id="modal-game-title" style="font-weight:800; font-size:1.2rem;">Jeu</div>
+      <div style="display:flex; gap:10px;">
+        <button class="btn-action" onclick="window.likeCurrentGame()"><i class="fa-solid fa-heart" style="color:var(--accent-pink);"></i> <span id="modal-likes">0</span></button>
+        <button class="btn-action" onclick="window.toggleFullscreen()"><i class="fa-solid fa-expand"></i></button>
+        <button class="btn-action" style="background:#ef4444;" onclick="window.closeGameModal()">Fermer</button>
+      </div>
+    </div>
+    <div style="padding:10px 25px; background:rgba(0,0,0,0.4); font-size:0.85rem; color:var(--text-muted); display:flex; justify-content:space-between;">
+      <span id="modal-game-desc">Description du jeu...</span>
+      <span id="modal-game-views"><i class="fa-solid fa-eye"></i> 0 vues</span>
+    </div>
+    <div class="modal-body" id="fullscreen-target">
+      <iframe id="game-frame"></iframe>
+    </div>
+  </div>
+
+  <!-- MODALE DE PUBLICATION DEPUIS LE STUDIO -->
+  <div id="studio-publish-modal" class="modal-popup">
+    <div class="popup-box">
+      <h2 style="margin-bottom:15px;"><i class="fa-solid fa-paper-plane"></i> Publier depuis le Studio</h2>
+      <form onsubmit="window.handleStudioPublishSubmit(event)">
+        <div class="form-group">
+          <label>Titre du jeu</label>
+          <input type="text" id="studio-pub-title" class="form-input" placeholder="Nom de votre jeu" required>
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <input type="text" id="studio-pub-desc" class="form-input" placeholder="Courte description" required>
+        </div>
+        <div class="form-group">
+          <label>Image de couverture (Facultatif)</label>
+          <div class="custom-file-btn" onclick="document.getElementById('studio-pub-cover').click()">
+            <i class="fa-solid fa-image"></i> <span id="studio-cover-label">Choisir une image de couverture</span>
+          </div>
+          <input type="file" id="studio-pub-cover" accept="image/*" style="display:none;" onchange="window.updateFileLabel(this, 'studio-cover-label')">
+        </div>
+        <button type="submit" class="btn-action primary" style="width:100%; justify-content:center; padding:12px; margin-top:10px;">Publier le jeu</button>
+      </form>
+      <button class="btn-action" style="width:100%; justify-content:center; margin-top:10px;" onclick="document.getElementById('studio-publish-modal').classList.remove('active')">Annuler</button>
+    </div>
+  </div>
+
+  <div id="auth-modal" class="modal-popup">
+    <div class="popup-box">
+      <h2 style="margin-bottom:15px;" id="auth-modal-title" data-i18n="auth_title">Connexion / Inscription</h2>
+      <div id="auth-error-box" class="error-msg">Message d'erreur</div>
+      <form onsubmit="window.handleAuth(event)">
+        <div class="form-group">
+          <label data-i18n="username">Pseudo</label>
+          <input type="text" id="auth-user" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label data-i18n="password">Mot de passe</label>
+          <input type="password" id="auth-pass" class="form-input" required>
+        </div>
+        <button type="submit" class="btn-action primary" style="width:100%; justify-content:center; padding:10px; margin-bottom:10px;" id="auth-submit-btn">Se connecter</button>
+      </form>
+      <button class="btn-action" style="width:100%; justify-content:center; background:rgba(139,92,246,0.2);" onclick="window.toggleAuthMode()" id="auth-switch-btn">Pas de compte ? S'inscrire</button>
+      <button class="btn-action" style="width:100%; justify-content:center; margin-top:10px;" onclick="window.closeAuthModal()" data-i18n="cancel">Annuler</button>
+    </div>
+  </div>
+
+  <div id="cgu-modal" class="modal-popup">
+    <div class="popup-box" style="width: 500px;">
+      <h2 style="margin-bottom:15px;"><i class="fa-solid fa-scale-balanced"></i> <span data-i18n="cgu">Conditions d'Utilisation</span></h2>
+      <div style="font-size:0.85rem; color:var(--text-muted); line-height:1.6; max-height:300px; overflow-y:auto; margin-bottom:20px; padding-right:10px;">
+        <p data-i18n="cgu_p1"><strong>1. Droits d'auteur & Conception © :</strong> L'ensemble de la plateforme NITFORT a été conçu avec l'assistance de l'intelligence artificielle Gemini.</p><br>
+        <p data-i18n="cgu_p2"><strong>2. Interdiction des obscénités :</strong> Tout contenu obscène ou haineux est strictement interdit.</p><br>
+        <p data-i18n="cgu_p3"><strong>3. Sanctions :</strong> Tout manquement entraînera le bannissement définitif.</p>
+      </div>
+      <button class="btn-action primary" style="width:100%; justify-content:center;" onclick="window.closeCguModal()">J'ai compris</button>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/xml/xml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/javascript/javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/css/css.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/htmlmixed/htmlmixed.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/clike/clike.min.js"></script>
+
+  <!-- CONFIGURATION FIREBASE EXACTE DE TON PROJET NITFORT -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBOX_05RBJJj0J_8TILiEm1-49vWf-cmoU",
+      authDomain: "nitfort.firebaseapp.com",
+      projectId: "nitfort",
+      storageBucket: "nitfort.firebasestorage.app",
+      messagingSenderId: "448178317339",
+      appId: "1:448178317339:web:c3b2e432335c99e581f0be",
+      measurementId: "G-WYPEJZVM8Y"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Exposition globale des méthodes Firebase
+    window.db = db;
+    window.fsCollection = collection;
+    window.fsAddDoc = addDoc;
+    window.fsGetDocs = getDocs;
+    window.fsDoc = doc;
+    window.fsSetDoc = setDoc;
+    window.fsGetDoc = getDoc;
+    window.fsUpdateDoc = updateDoc;
+    window.fsDeleteDoc = deleteDoc;
+    window.fsOnSnapshot = onSnapshot;
+
+    // Écoute des jeux en temps réel depuis Firestore
+    onSnapshot(collection(db, "games"), (snapshot) => {
+      window.gamesList = [];
+      snapshot.forEach((doc) => {
+        window.gamesList.push({ id: doc.id, ...doc.data() });
+      });
+      if (typeof window.renderStore === 'function') window.renderStore();
+      if (typeof window.renderMyGames === 'function') window.renderMyGames();
+    });
+  </script>
+
+  <script>
+    const TRANSLATIONS = {
+      fr: {
+        store: "Boutique & Jeux", library: "Ma Bibliothèque", upload: "Importer un Jeu", profile: "Mon Profil", settings: "Paramètres App", cgu: "Conditions d'Utilisation",
+        hero_title: "Créez, importez et jouez à des jeux web instantanés.", hero_desc: "Le launcher ultime pour publier vos créations. Respectez les conditions d'utilisation.",
+        publish_btn: "Publier mon Jeu", studio_btn: "Ouvrir NITFORT Code", cat_all: "Tous les jeux", cat_pop: "Populaires & Vues", cat_loved: "Les plus aimés", cat_new: "Nouveautés",
+        upload_title: "Publier un jeu HTML", rules_title: "Règles de publication :", rules_desc: "Tout projet contenant des obscénités, contenus haineux ou violents sera banni.",
+        game_title: "Titre du jeu", game_desc: "Description", cover_img: "Image de couverture (Facultatif)", choose_cover: "Choisir une image de couverture",
+        game_file: "Fichier du jeu (.html)", choose_file: "Sélectionner le fichier .html", cgu_agree: "J'accepte les Conditions d'Utilisation de NITFORT.", publish_submit: "Publier le jeu",
+        import_btn: "Importer", download_btn: "Télécharger", publish_studio_btn: "Publier", preview_title: "Aperçu du Jeu (Grand Écran)", fullscreen_btn: "Plein Écran",
+        settings_title: "Paramètres de l'application", settings_desc: "Personnalisez votre expérience sur NITFORT :", lang_label: "Langue du site / Website Language",
+        theme_label: "Couleur d'ambiance de la galaxie", auth_title: "Connexion / Inscription", username: "Pseudo", password: "Mot de passe", cancel: "Annuler",
+        cgu_p1: "1. Droits d'auteur & Conception © : L'ensemble de la plateforme NITFORT a été conçu avec l'assistance de l'intelligence artificielle Gemini.",
+        cgu_p2: "2. Interdiction des obscénités : Tout contenu obscène ou haineux est strictement interdit.",
+        cgu_p3: "3. Sanctions : Tout manquement entraînera le bannissement définitif."
+      },
+      en: {
+        store: "Store & Games", library: "My Library", upload: "Import Game", profile: "My Profile", settings: "App Settings", cgu: "Terms of Use",
+        hero_title: "Create, import and play instant web games.", hero_desc: "The ultimate launcher to publish your creations. Respect the terms of use.",
+        publish_btn: "Publish my Game", studio_btn: "Open NITFORT Code", cat_all: "All games", cat_pop: "Popular & Views", cat_loved: "Most Loved", cat_new: "New Releases",
+        upload_title: "Publish an HTML Game", rules_title: "Publishing Rules:", rules_desc: "Any project containing obscenities, hate speech, or violence will be banned.",
+        game_title: "Game Title", game_desc: "Description", cover_img: "Cover Image (Optional)", choose_cover: "Choose a cover image",
+        game_file: "Game File (.html)", choose_file: "Select .html file", cgu_agree: "I accept the Terms of Use of NITFORT.", publish_submit: "Publish Game",
+        import_btn: "Import", download_btn: "Download", publish_studio_btn: "Publish", preview_title: "Game Preview (Fullscreen)", fullscreen_btn: "Fullscreen",
+        settings_title: "Application Settings", settings_desc: "Customize your experience on NITFORT:", lang_label: "Website Language",
+        theme_label: "Galaxy Ambient Color", auth_title: "Login / Register", username: "Username", password: "Password", cancel: "Cancel",
+        cgu_p1: "1. Copyright & Design ©: The NITFORT platform was designed with Gemini assistance.",
+        cgu_p2: "2. Prohibition of obscenities: Any obscene or hateful content is strictly prohibited.",
+        cgu_p3: "3. Sanctions: Any violation will result in permanent ban."
+      },
+      es: {
+        store: "Tienda y Juegos", library: "Mi Biblioteca", upload: "Importar Juego", profile: "Mi Perfil", settings: "Ajustes de la App", cgu: "Condiciones de Uso",
+        hero_title: "Crea, importa y juega a juegos web instantáneos.", hero_desc: "El launcher definitivo para publicar tus creaciones. Respeta las condiciones de uso.",
+        publish_btn: "Publicar mi Juego", studio_btn: "Abrir NITFORT Code", cat_all: "Todos los juegos", cat_pop: "Populares", cat_loved: "Más queridos", cat_new: "Novedades",
+        upload_title: "Publicar un juego HTML", rules_title: "Reglas de publicación:", rules_desc: "Cualquier proyecto con contenido obsceno u ofensivo será eliminado.",
+        game_title: "Título del juego", game_desc: "Descripción", cover_img: "Imagen de portada (Opcional)", choose_cover: "Elegir portada",
+        game_file: "Archivo del juego (.html)", choose_file: "Seleccionar archivo .html", cgu_agree: "Acepto las Condiciones de Uso de NITFORT.", publish_submit: "Publicar juego",
+        import_btn: "Importar", download_btn: "Descargar", publish_studio_btn: "Publicar", preview_title: "Vista previa", fullscreen_btn: "Pantalla completa",
+        settings_title: "Ajustes de la aplicación", settings_desc: "Personaliza tu experiencia en NITFORT:", lang_label: "Idioma del sitio",
+        theme_label: "Color ambiental de la galaxia", auth_title: "Iniciar sesión / Registro", username: "Usuario", password: "Contraseña", cancel: "Cancelar",
+        cgu_p1: "1. Derechos de autor: La plataforma NITFORT fue diseñada con asistencia de Gemini.",
+        cgu_p2: "2. Prohibición de obscenidades: Todo contenido obsceno está strictly prohibido.",
+        cgu_p3: "3. Sanciones: Cualquier incumplimiento conllevará la expulsión definitiva."
+      },
+      ru: {
+        store: "Магазин и игры", library: "Моя библиотека", upload: "Импорт игры", profile: "Профиль", settings: "Настройки", cgu: "Условия использования",
+        hero_title: "Создавайте, импортируйте и играйте в веб-игры.", hero_desc: "Лучший лаунчер для публикации ваших творений. Соблюдайте правила.",
+        publish_btn: "Опубликовать игру", studio_btn: "Открыть NITFORT Code", cat_all: "Все игры", cat_pop: "Популярные", cat_loved: "Любимые", cat_new: "Новинки",
+        upload_title: "Публикация HTML игры", rules_title: "Правила публикации:", rules_desc: "Контент с ненормативной лексикой или насилием будет удален.",
+        game_title: "Название игры", game_desc: "Описание", cover_img: "Обложка (Необязательно)", choose_cover: "Выбрать обложку",
+        game_file: "Файл игры (.html)", choose_file: "Выбрать .html файл", cgu_agree: "Я принимаю условия использования NITFORT.", publish_submit: "Опубликовать",
+        import_btn: "Импорт", download_btn: "Скачать", publish_studio_btn: "Опубликовать", preview_title: "Предпросмотр", fullscreen_btn: "На весь экран",
+        settings_title: "Настройки приложения", settings_desc: "Настройте ваш опыт в NITFORT:", lang_label: "Язык сайта",
+        theme_label: "Цвет галактики", auth_title: "Вход / Регистрация", username: "Логин", password: "Пароль", cancel: "Отмена",
+        cgu_p1: "1. Авторские права: Платформа NITFORT разработана с помощью Gemini.",
+        cgu_p2: "2. Запрет на ненормативную лексику и оскорбления.",
+        cgu_p3: "3. Нарушение правил влечет за собой бан."
+      },
+      zh: {
+        store: "商店与游戏", library: "我的库", upload: "导入游戏", profile: "个人资料", settings: "应用设置", cgu: "使用条款",
+        hero_title: "创建、导入并畅玩即时网页游戏。", hero_desc: "发布您创意的终极启动器。请遵守使用条款。",
+        publish_btn: "发布我的游戏", studio_btn: "打开 NITFORT 代码", cat_all: "所有游戏", cat_pop: "热门与浏览", cat_loved: "最受喜爱", cat_new: "最新发布",
+        upload_title: "发布 HTML 游戏", rules_title: "发布规则：", rules_desc: "任何包含淫秽、仇恨或暴力内容的项目将被永久封禁。",
+        game_title: "游戏标题", game_desc: "描述", cover_img: "封面图片（可选）", choose_cover: "选择封面图片",
+        game_file: "游戏文件 (.html)", choose_file: "选择 .html 文件", cgu_agree: "我接受 NITFORT 的使用条款。", publish_submit: "发布游戏",
+        import_btn: "导入", download_btn: "下载", publish_studio_btn: "发布", preview_title: "游戏预览（全屏）", fullscreen_btn: "全屏",
+        settings_title: "应用设置", settings_desc: "自定义您在 NITFORT 上的体验：", lang_label: "网站语言",
+        theme_label: "星系背景色", auth_title: "登录 / 注册", username: "用户名", password: "密码", cancel: "取消",
+        cgu_p1: "1. 版权与设计 ©：NITFORT 平台在 Gemini 的协助下设计。",
+        cgu_p2: "2. 禁止淫秽：严禁任何淫秽或仇恨内容。",
+        cgu_p3: "3. 处罚：任何违规行为将导致永久封号。"
+      }
+    };
+
+    let currentLang = localStorage.getItem('nitfort_lang') || 'fr';
+
+    function applyTranslations() {
+      const select = document.getElementById('app-lang-select');
+      if(select) select.value = currentLang;
+      const t = TRANSLATIONS[currentLang] || TRANSLATIONS['fr'];
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if(t[key]) {
+          el.innerHTML = t[key];
+        }
+      });
+    }
+
+    let currentUser = JSON.parse(localStorage.getItem('nitfort_user')) || null;
+    window.gamesList = [];
+    let savedStudioCode = localStorage.getItem('nitfort_studio_code') || '';
+    let sessionUserId = localStorage.getItem('nitfort_session_id') || ('user-' + Math.random().toString(36).substring(2));
+    localStorage.setItem('nitfort_session_id', sessionUserId);
+
+    let currentCategory = 'all';
+    let isRegisterAction = false;
+    let currentGameId = null;
+    let codeEditorInstance = null;
+
+    function createDefaultAvatar(name) {
+      const initial = (name || 'U').charAt(0).toUpperCase();
+      return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%238b5cf6"/><text x="50%" y="55%" fill="%23ffffff" font-size="45" font-family="sans-serif" font-weight="bold" dominant-baseline="middle" text-anchor="middle">${initial}</text></svg>`;
+    }
+
+    function createDefaultCover(title) {
+      const cleanTitle = (title || 'Jeu').replace(/["<>]/g, '').substring(0, 15);
+      return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200"><rect width="400" height="200" fill="%231e1b4b"/><text x="50%" y="50%" fill="%238b5cf6" font-size="24" font-family="sans-serif" font-weight="bold" dominant-baseline="middle" text-anchor="middle">${cleanTitle}</text></svg>`;
+    }
+
+    const CODE_TEMPLATES = {
+      html: `<!DOCTYPE html>\n<html>\n<head>\n  <style>body{background:#0b0c17;color:#fff;text-align:center;font-family:sans-serif;padding-top:50px;}</style>\n</head>\n<body>\n  <h1>Mon Mini Jeu</h1>\n  <button onclick="alert('Bravo !')">Jouer</button>\n</body>\n</html>`,
+      clike: `using System;\n\npublic class Game {\n    public static void Main() {\n        Console.WriteLine("Jeu C# / C++ Démarré !");\n    }\n}`
+    };
+
+    window.changeAppLanguage = function(newLang) {
+      localStorage.setItem('nitfort_lang', newLang);
+      location.reload();
+    };
+
+    window.showCguModal = function() { document.getElementById('cgu-modal').classList.add('active'); };
+    window.closeCguModal = function() { document.getElementById('cgu-modal').classList.remove('active'); };
+
+    window.banGame = async function(id) {
+      const reason = prompt("Raison du signalement (ex: Obscénité, non-respect des CGU) :");
+      if(reason !== null && window.db) {
+        await window.fsDeleteDoc(window.fsDoc(window.db, "games", id));
+        alert("Le projet a été supprimé de la base de données.");
+      }
+    };
+
+    window.showPage = function(pageId, element = null) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+
+      const target = document.getElementById(`page-${pageId}`);
+      if(target) target.classList.add('active');
+      if(element) element.classList.add('active');
+
+      if(pageId === 'store') window.renderStore();
+      if(pageId === 'my-games') window.renderMyGames();
+      if(pageId === 'profile') renderProfile();
+      if(pageId === 'code-studio') initStudio();
+    };
+
+    function renderUserUI() {
+      const sidebarUser = document.getElementById('sidebar-user-info');
+      const topUser = document.getElementById('top-user-btn');
+
+      if(currentUser) {
+        const avatarSrc = currentUser.avatar || createDefaultAvatar(currentUser.username);
+        sidebarUser.innerHTML = '';
+        const imgEl = document.createElement('img');
+        imgEl.src = avatarSrc;
+        imgEl.className = 'user-avatar-img';
+        imgEl.onclick = () => window.showPage('profile');
+        
+        const divEl = document.createElement('div');
+        divEl.innerHTML = `<div style="font-weight:700; font-size:0.85rem;">${currentUser.username}</div><div style="font-size:0.7rem; color:var(--accent-green);">● En ligne</div>`;
+        
+        sidebarUser.appendChild(imgEl);
+        sidebarUser.appendChild(divEl);
+
+        topUser.innerHTML = '';
+        const btnTop = document.createElement('button');
+        btnTop.className = 'btn-action';
+        btnTop.onclick = () => window.showPage('profile');
+        
+        const topImg = document.createElement('img');
+        topImg.src = avatarSrc;
+        topImg.style.cssText = "width:20px; height:20px; border-radius:50%; object-fit:cover;";
+        btnTop.appendChild(topImg);
+        btnTop.append(` ${currentUser.username}`);
+        topUser.appendChild(btnTop);
+      } else {
+        sidebarUser.innerHTML = `<button class="btn-action primary" style="width:100%; justify-content:center;" onclick="window.openAuthModal()">Se connecter</button>`;
+        topUser.innerHTML = `<button class="btn-action primary" onclick="window.openAuthModal()">Se connecter</button>`;
+      }
+    }
+
+    window.setStoreCategory = function(category, btn) {
+      currentCategory = category;
+      document.querySelectorAll('.store-filters .filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      window.renderStore(document.getElementById('search-input').value);
+    };
+
+    window.renderStore = function(filterText = '') {
+      const container = document.getElementById('games-container');
+      if(!container) return;
+      container.innerHTML = '';
+
+      let filtered = (window.gamesList || []).filter(g => g.title && g.title.toLowerCase().includes(filterText.toLowerCase()));
+
+      if (currentCategory === 'popular') {
+        filtered.sort((a, b) => (b.views || 0) - (a.views || 0));
+      } else if (currentCategory === 'loved') {
+        filtered.sort((a, b) => (b.likes || 0) - (a.likes || 0));
+      } else if (currentCategory === 'recent') {
+        filtered.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      }
+
+      if(filtered.length === 0) {
+        container.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding:40px; color:var(--text-muted);">Aucun jeu disponible pour le moment.</div>`;
+        return;
+      }
+
+      filtered.forEach(game => {
+        const isOwner = currentUser && currentUser.username === game.author;
+        const coverSrc = game.cover || createDefaultCover(game.title);
+        const card = document.createElement('div');
+        card.className = 'game-card';
+        card.innerHTML = `
+          <img src="${coverSrc}" class="game-cover">
+          <div class="game-details">
+            <div class="game-name">${game.title}</div>
+            <div class="game-author-txt" onclick="window.openDevProfile('${game.author}')">Par ${game.author}</div>
+            <div class="game-card-footer">
+              <div class="game-stats">
+                <span><i class="fa-solid fa-eye"></i> ${game.views || 0}</span>
+                <span><i class="fa-solid fa-heart" style="color:var(--accent-pink);"></i> ${game.likes || 0}</span>
+              </div>
+              <div style="display:flex; gap:6px;">
+                <button class="btn-action primary" onclick="window.playGame('${game.id}')"><i class="fa-solid fa-play"></i> Jouer</button>
+                ${isOwner ? `<button class="btn-action" style="background:rgba(239,68,68,0.2); color:#ef4444;" onclick="window.deleteGame('${game.id}')"><i class="fa-solid fa-trash"></i></button>` : `<button class="btn-action" style="background:rgba(239,68,68,0.2); color:#ef4444;" title="Signaler" onclick="window.banGame('${game.id}')"><i class="fa-solid fa-flag"></i></button>`}
+              </div>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    };
+
+    window.renderMyGames = function() {
+      const container = document.getElementById('my-games-container');
+      if(!container) return;
+      container.innerHTML = '';
+      if(!currentUser) {
+        container.innerHTML = `<p style="color:var(--text-muted);">Connectez-vous pour voir vos jeux.</p>`;
+        return;
+      }
+      const myGames = (window.gamesList || []).filter(g => g.author === currentUser.username);
+      if(myGames.length === 0) {
+        container.innerHTML = `<p style="color:var(--text-muted);">Vous n'avez encore publié aucun jeu.</p>`;
+        return;
+      }
+      myGames.forEach(game => {
+        const coverSrc = game.cover || createDefaultCover(game.title);
+        const card = document.createElement('div');
+        card.className = 'game-card';
+        card.innerHTML = `
+          <img src="${coverSrc}" class="game-cover">
+          <div class="game-details">
+            <div class="game-name">${game.title}</div>
+            <div class="game-card-footer" style="margin-top:15px;">
+              <div class="game-stats">
+                <span><i class="fa-solid fa-eye"></i> ${game.views || 0}</span>
+                <span><i class="fa-solid fa-heart" style="color:var(--accent-pink);"></i> ${game.likes || 0}</span>
+              </div>
+              <div style="display:flex; gap:6px;">
+                <button class="btn-action primary" onclick="window.playGame('${game.id}')">Jouer</button>
+                <button class="btn-action" style="background:rgba(239,68,68,0.2); color:#ef4444;" onclick="window.deleteGame('${game.id}')"><i class="fa-solid fa-trash"></i></button>
+              </div>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    };
+
+    window.openDevProfile = function(devName) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById('page-dev-profile').classList.add('active');
+
+      const devGames = (window.gamesList || []).filter(g => g.author === devName);
+      const container = document.getElementById('dev-profile-container');
+      container.innerHTML = `
+        <h2 style="margin-bottom:20px;"><i class="fa-solid fa-user-gear"></i> Profil de ${devName}</h2>
+        <p style="color:var(--text-muted); margin-bottom:20px;">Tous les projets publiés par ce développeur :</p>
+        <div class="games-grid" id="dev-games-grid"></div>
+      `;
+
+      const grid = document.getElementById('dev-games-grid');
+      devGames.forEach(game => {
+        const coverSrc = game.cover || createDefaultCover(game.title);
+        const card = document.createElement('div');
+        card.className = 'game-card';
+        card.innerHTML = `
+          <img src="${coverSrc}" class="game-cover">
+          <div class="game-details">
+            <div class="game-name">${game.title}</div>
+            <div class="game-card-footer" style="margin-top:15px;">
+              <button class="btn-action primary" style="flex:1; justify-content:center;" onclick="window.playGame('${game.id}')">Jouer</button>
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    };
+
+    window.filterGames = function() {
+      const q = document.getElementById('search-input').value;
+      window.renderStore(q);
+    };
+
+    window.deleteGame = async function(id) {
+      if(window.db) {
+        await window.fsDeleteDoc(window.fsDoc(window.db, "games", id));
+      }
+    };
+
+    window.updateFileLabel = function(input, labelId) {
+      if(input.files && input.files[0]) {
+        document.getElementById(labelId).innerText = input.files[0].name;
+      }
+    };
+
+    window.handlePublishGame = function(e) {
+      e.preventDefault();
+      if(!currentUser) {
+        window.openAuthModal();
+        return;
+      }
+
+      const cguChecked = document.getElementById('upload-cgu-check').checked;
+      if (!cguChecked) {
+        alert("Vous devez accepter les conditions d'utilisation.");
+        return;
+      }
+
+      const title = document.getElementById('upload-title').value;
+      const desc = document.getElementById('upload-desc').value;
+      const coverFile = document.getElementById('upload-cover').files[0];
+      const htmlFile = document.getElementById('upload-html').files[0];
+
+      const rHtml = new FileReader();
+
+      const finishPublish = async (coverBase64) => {
+        rHtml.onload = async function(eH) {
+          const newGame = {
+            title: title,
+            description: desc,
+            author: currentUser.username,
+            cover: coverBase64 || createDefaultCover(title),
+            code: eH.target.result,
+            views: 0,
+            likes: 0,
+            viewers: [],
+            createdAt: Date.now()
+          };
+          
+          if(window.db) {
+            await window.fsAddDoc(window.fsCollection(window.db, "games"), newGame);
+          }
+          window.showPage('store');
+        };
+        rHtml.readAsText(htmlFile);
+      };
+
+      if(coverFile) {
+        const rCover = new FileReader();
+        rCover.onload = (eC) => finishPublish(eC.target.result);
+        rCover.readAsDataURL(coverFile);
+      } else {
+        finishPublish(null);
+      }
+    };
+
+    // Publication depuis le Studio avec formulaire de titre, description et image
+    window.publishFromStudio = function() {
+      if(!currentUser) {
+        window.openAuthModal();
+        return;
+      }
+      document.getElementById('studio-pub-title').value = '';
+      document.getElementById('studio-pub-desc').value = '';
+      document.getElementById('studio-pub-cover').value = '';
+      document.getElementById('studio-cover-label').innerText = 'Choisir une image de couverture';
+      document.getElementById('studio-publish-modal').classList.add('active');
+    };
+
+    window.handleStudioPublishSubmit = async function(e) {
+      e.preventDefault();
+      if(!currentUser) return;
+
+      const title = document.getElementById('studio-pub-title').value;
+      const desc = document.getElementById('studio-pub-desc').value;
+      const coverFile = document.getElementById('studio-pub-cover').files[0];
+      const codeContent = document.getElementById('studio-preview').srcdoc;
+
+      const finishStudioPublish = async (coverBase64) => {
+        const newGame = {
+          title: title,
+          description: desc,
+          author: currentUser.username,
+          cover: coverBase64 || createDefaultCover(title),
+          code: codeContent,
+          views: 0,
+          likes: 0,
+          viewers: [],
+          createdAt: Date.now()
+        };
+
+        if(window.db) {
+          await window.fsAddDoc(window.fsCollection(window.db, "games"), newGame);
+        }
+        document.getElementById('studio-publish-modal').classList.remove('active');
+        window.showPage('store');
+      };
+
+      if(coverFile) {
+        const rCover = new FileReader();
+        rCover.onload = (eC) => finishStudioPublish(eC.target.result);
+        rCover.readAsDataURL(coverFile);
+      } else {
+        finishStudioPublish(null);
+      }
+    };
+
+    window.playGame = async function(id) {
+      const game = (window.gamesList || []).find(g => g.id === id);
+      if(!game) return;
+
+      currentGameId = id;
+      let viewersArr = game.viewers || [];
+      
+      if(!viewersArr.includes(sessionUserId)) {
+        viewersArr.push(sessionUserId);
+        game.views = viewersArr.length;
+        if(window.db) {
+          await window.fsUpdateDoc(window.fsDoc(window.db, "games", id), {
+            views: game.views,
+            viewers: viewersArr
+          });
+        }
+      }
+
+      document.getElementById('modal-game-title').innerText = game.title;
+      document.getElementById('modal-game-desc').innerText = game.description || "Aucune description fournie.";
+      document.getElementById('modal-game-views').innerHTML = `<i class="fa-solid fa-eye"></i> ${game.views || 0} vues`;
+      document.getElementById('modal-likes').innerText = game.likes || 0;
+
+      document.getElementById('game-frame').srcdoc = game.code;
+      document.getElementById('game-modal').classList.add('active');
+    };
+
+    window.likeCurrentGame = async function() {
+      if(!currentGameId) return;
+      const game = (window.gamesList || []).find(g => g.id === currentGameId);
+      if(game && window.db) {
+        const newLikes = (game.likes || 0) + 1;
+        document.getElementById('modal-likes').innerText = newLikes;
+        await window.fsUpdateDoc(window.fsDoc(window.db, "games", currentGameId), {
+          likes: newLikes
+        });
+      }
+    };
+
+    window.closeGameModal = function() {
+      document.getElementById('game-modal').classList.remove('active');
+      document.getElementById('game-frame').srcdoc = '';
+      currentGameId = null;
+    };
+
+    window.toggleFullscreen = function() {
+      const elem = document.getElementById('fullscreen-target');
+      if(!document.fullscreenElement) {
+        elem.requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    };
+
+    window.toggleStudioFullscreen = function() {
+      const elem = document.getElementById('studio-preview-wrapper');
+      if(!document.fullscreenElement) {
+        elem.requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    };
+
+    function initStudio() {
+      if(!codeEditorInstance) {
+        codeEditorInstance = CodeMirror.fromTextArea(document.getElementById('code-editor-target'), {
+          mode: 'htmlmixed',
+          theme: 'material-darker',
+          lineNumbers: true,
+          lineWrapping: true,
+          tabSize: 2
+        });
+
+        codeEditorInstance.on('change', () => {
+          savedStudioCode = codeEditorInstance.getValue();
+          localStorage.setItem('nitfort_studio_code', savedStudioCode);
+          updateStudioPreview();
+        });
+      }
+
+      if(savedStudioCode) {
+        codeEditorInstance.setValue(savedStudioCode);
+      } else {
+        codeEditorInstance.setValue(CODE_TEMPLATES.html);
+      }
+
+      setTimeout(() => codeEditorInstance.refresh(), 100);
+      updateStudioPreview();
+    }
+
+    window.switchLanguage = function(mode, btn) {
+      document.querySelectorAll('.lang-tab').forEach(t => t.classList.remove('active'));
+      btn.classList.add('active');
+      if(codeEditorInstance) {
+        codeEditorInstance.setOption('mode', mode === 'html' ? 'htmlmixed' : 'text/x-c++src');
+        if(!savedStudioCode || savedStudioCode === CODE_TEMPLATES.html) {
+          codeEditorInstance.setValue(CODE_TEMPLATES[mode] || CODE_TEMPLATES.html);
+        }
+      }
+    };
+
+    function updateStudioPreview() {
+      if(!codeEditorInstance) return;
+      const code = codeEditorInstance.getValue();
+      const preview = document.getElementById('studio-preview');
+      preview.srcdoc = code;
+    }
+
+    window.downloadStudioCode = function() {
+      const code = codeEditorInstance ? codeEditorInstance.getValue() : '';
+      const blob = new Blob([code], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'mon-jeu-nitfort.html';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    };
+
+    window.importStudioCode = function(input) {
+      const file = input.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        savedStudioCode = e.target.result;
+        if(codeEditorInstance) {
+          codeEditorInstance.setValue(savedStudioCode);
+        }
+        localStorage.setItem('nitfort_studio_code', savedStudioCode);
+        updateStudioPreview();
+      };
+      reader.readAsText(file);
+    };
+
+    function renderProfile() {
+      const box = document.getElementById('profile-box');
+      if(!currentUser) {
+        box.innerHTML = `<h2>Connectez-vous pour voir votre profil</h2>`;
+        return;
+      }
+      const avatarSrc = currentUser.avatar || createDefaultAvatar(currentUser.username);
+      box.innerHTML = '';
+      
+      const img = document.createElement('img');
+      img.src = avatarSrc;
+      img.style.cssText = "width:90px; height:90px; border-radius:50%; border:3px solid var(--accent-primary); margin-bottom:15px; object-fit:cover;";
+      
+      const h2 = document.createElement('h2');
+      h2.innerText = currentUser.username;
+
+      const p = document.createElement('p');
+      p.style.cssText = "color:var(--text-muted); margin:10px 0;";
+      p.innerText = "Changer la photo de profil";
+
+      const btnUpload = document.createElement('div');
+      btnUpload.className = "custom-file-btn";
+      btnUpload.style.marginBottom = "15px";
+      btnUpload.innerHTML = '<i class="fa-solid fa-camera"></i> Choisir une nouvelle photo';
+      btnUpload.onclick = () => document.getElementById('avatar-input').click();
+
+      const input = document.createElement('input');
+      input.type = "file";
+      input.id = "avatar-input";
+      input.accept = "image/*";
+      input.style.display = "none";
+      input.onchange = changeAvatar;
+
+      const btnLogout = document.createElement('button');
+      btnLogout.className = "btn-action";
+      btnLogout.style.cssText = "background:#ef4444; width:100%; justify-content:center;";
+      btnLogout.innerHTML = "Déconnexion";
+      btnLogout.onclick = logout;
+
+      box.appendChild(img);
+      box.appendChild(h2);
+      box.appendChild(p);
+      box.appendChild(btnUpload);
+      box.appendChild(input);
+      box.appendChild(btnLogout);
+    }
+
+    async function changeAvatar(e) {
+      const file = e.target.files[0];
+      if(!file) return;
+      const r = new FileReader();
+      r.onload = async function(evt) {
+        currentUser.avatar = evt.target.result;
+        localStorage.setItem('nitfort_user', JSON.stringify(currentUser));
+        if(window.db) {
+          await window.fsSetDoc(window.fsDoc(window.db, "users", currentUser.username), currentUser);
+        }
+        renderUserUI();
+        renderProfile();
+      };
+      r.readAsDataURL(file);
+    }
+
+    window.changeTheme = function(theme) {
+      const nebula = document.getElementById('nebula-bg');
+      if(theme === 'purple') {
+        document.documentElement.style.setProperty('--accent-primary', '#8b5cf6');
+        nebula.style.background = `radial-gradient(circle at 20% 30%, rgba(139, 92, 246, 0.3) 0%, transparent 60%)`;
+      } else if(theme === 'cyan') {
+        document.documentElement.style.setProperty('--accent-primary', '#06b6d4');
+        nebula.style.background = `radial-gradient(circle at 50% 50%, rgba(6, 182, 212, 0.35) 0%, transparent 60%)`;
+      } else if(theme === 'pink') {
+        document.documentElement.style.setProperty('--accent-primary', '#ec4899');
+        nebula.style.background = `radial-gradient(circle at 70% 30%, rgba(236, 72, 153, 0.35) 0%, transparent 60%)`;
+      } else if(theme === 'green') {
+        document.documentElement.style.setProperty('--accent-primary', '#10b981');
+        nebula.style.background = `radial-gradient(circle at 30% 70%, rgba(16, 185, 129, 0.35) 0%, transparent 60%)`;
+      } else if(theme === 'orange') {
+        document.documentElement.style.setProperty('--accent-primary', '#f59e0b');
+        nebula.style.background = `radial-gradient(circle at 50% 30%, rgba(245, 158, 11, 0.35) 0%, transparent 60%)`;
+      }
+    };
+
+    window.openAuthModal = function() { 
+      document.getElementById('auth-error-box').style.display = 'none';
+      document.getElementById('auth-modal').classList.add('active'); 
+    };
+    window.closeAuthModal = function() { document.getElementById('auth-modal').classList.remove('active'); };
+
+    window.toggleAuthMode = function() {
+      isRegisterAction = !isRegisterAction;
+      document.getElementById('auth-error-box').style.display = 'none';
+      document.getElementById('auth-modal-title').innerText = isRegisterAction ? "Créer un compte" : "Connexion";
+      document.getElementById('auth-submit-btn').innerText = isRegisterAction ? "S'inscrire" : "Se connecter";
+      document.getElementById('auth-switch-btn').innerText = isRegisterAction ? "Déjà un compte ? Se connecter" : "Pas de compte ? S'inscrire";
+    };
+
+    window.handleAuth = async function(e) {
+      e.preventDefault();
+      const user = document.getElementById('auth-user').value.trim();
+      const pass = document.getElementById('auth-pass').value;
+      const errorBox = document.getElementById('auth-error-box');
+
+      if(!window.db) {
+        errorBox.innerText = "Base de données non prête.";
+        errorBox.style.display = 'block';
+        return;
+      }
+
+      const userDocRef = window.fsDoc(window.db, "users", user);
+      const userSnap = await window.fsGetDoc(userDocRef);
+
+      if(isRegisterAction) {
+        if(userSnap.exists()) {
+          errorBox.innerText = "Ce compte existe déjà !";
+          errorBox.style.display = 'block';
+          return;
+        }
+        const newUser = { username: user, password: pass, avatar: createDefaultAvatar(user) };
+        await window.fsSetDoc(userDocRef, newUser);
+        currentUser = { username: user, avatar: newUser.avatar };
+      } else {
+        if(!userSnap.exists()) {
+          errorBox.innerText = "Ce compte n'existe pas !";
+          errorBox.style.display = 'block';
+          return;
+        }
+        const userData = userSnap.data();
+        if(userData.password !== pass) {
+          errorBox.innerText = "Mot de passe incorrect !";
+          errorBox.style.display = 'block';
+          return;
+        }
+        currentUser = { username: user, avatar: userData.avatar };
+      }
+
+      localStorage.setItem('nitfort_user', JSON.stringify(currentUser));
+      renderUserUI();
+      window.closeAuthModal();
+      window.showPage('store');
+    };
+
+    function logout() {
+      currentUser = null;
+      localStorage.removeItem('nitfort_user');
+      renderUserUI();
+      window.showPage('store');
+    }
+
+    function initGalaxy() {
+      const canvas = document.getElementById('galaxy-canvas');
+      if(!canvas) return;
+      const ctx = canvas.getContext('2d');
+      let w = canvas.width = window.innerWidth;
+      let h = canvas.height = window.innerHeight;
+
+      const stars = Array.from({length: 120}, () => ({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        r: Math.random() * 1.5,
+        s: Math.random() * 0.3 + 0.05
+      }));
+
+      function draw() {
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = '#ffffff';
+        stars.forEach(st => {
+          st.y -= st.s;
+          if(st.y < 0) st.y = h;
+          ctx.beginPath();
+          ctx.arc(st.x, st.y, st.r, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        requestAnimationFrame(draw);
+      }
+      draw();
+    }
+
+    window.onload = function() {
+      applyTranslations();
+      initGalaxy();
+      renderUserUI();
+      window.showPage('store');
+    };
+  </script>
+</body>
+</html>
